@@ -20,20 +20,21 @@ def generate_script(topic, duration, style):
 
 def generate_image_prompts(script):
     prompt = (
-        "You are a prompt designer for Leonardo AI. Create detailed image prompts for each section.\n"
-        "- 1 prompt each for intro/outro\n"
-        "- 1 prompt per main section (up to 5)\n"
-        "Include: camera specs, lighting, scene details, style\n"
-        f"Script: {script}\n"
-        "Format: Numbered list with prompts separated by ====\n"
-        "Keep each prompt under 24 tokens."
+        f"Create image prompts for this script:\n{script}\n"
+        "Format:\n"
+        "- Intro: 2 detailed prompts\n"
+        "- Each main section: 5 detailed prompts\n" 
+        "- Outro: 2 detailed prompts\n"
+        "Include camera specs, lighting, scene details, style.\n"
+        "Separate prompts with ====\n"
+        "Keep each under 24 tokens."
     )
     response = openai.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=800
+        max_tokens=1000
     )
-    return response.choices[0].message.content.replace("\n", "\n====\n")
+    return response.choices[0].message.content
 
 
 def generate_thumbnail_ideas(topic, script):
