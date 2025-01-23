@@ -36,16 +36,23 @@ def generate_image_prompts(script):
         messages=[{"role": "user", "content": prompt}],
         max_tokens=800
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.contentdef generate_image_prompts(script):
+    prompt = (
+        "You are a prompt designer for Leonardo AI. Create detailed image prompts for each section.\n"
+        "- 1 prompt each for intro/outro\n"
+        "- 1 prompt per main section (up to 5)\n"
+        "Include: camera specs, lighting, scene details, style\n"
+        f"Script: {script}\n"
+        "Format: Numbered list with prompts separated by ====\n"
+        "Keep each prompt under 24 tokens."
+    )
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=800
+    )
+    return response.choices[0].message.content.replace("\n", "\n====\n")
 
-def format_image_prompts(script):
-    prompts = generate_image_prompts(script)
-    formatted_prompts = format_image_prompts(st.session_state.script)
-   # formatted_prompts = prompts.split('\n')
-    # Filter out empty lines and join with separator
-    clean_prompts = '\n====\n'.join([p.strip() for p in formatted_prompts if p.strip()])
-    st.text_area("Formatted Prompts for Image Generator", clean_prompts, height=300)
-    return clean_prompts
 
 def generate_thumbnail_ideas(topic, script):
     prompt = (
