@@ -10,8 +10,8 @@ def generate_script(topic, duration, style):
         f"- Style: {style}\n"
         f"Ensure the script flows smoothly, keeping viewers engaged from start to finish."
     )
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
+    response = openai.chat.completions.create(
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1500
     )
