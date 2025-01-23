@@ -1,0 +1,9 @@
+streamlit~=1.39.0
+streamlit-tags
+langchain~=0.3.3
+langchain_community
+pandas~=2.2.3
+numpy
+langchain-community~=0.3.2
+plotly~=5.24.1
+Pygments~=2.18.0
