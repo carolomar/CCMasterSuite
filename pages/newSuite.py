@@ -20,19 +20,19 @@ def generate_script(topic, duration, style):
 
 def generate_image_prompts(script):
     prompt = (
-        f"Create image prompts for this script:\n{script}\n"
-        "Format:\n"
-        "- Intro: 2 detailed prompts\n"
-        "- Each main section: 5 detailed prompts\n" 
-        "- Outro: 2 detailed prompts\n"
-        "Include camera specs, lighting, scene details, style.\n"
-        "Separate prompts with ====\n"
-        "Keep each under 24 tokens."
+        f"Generate image prompts for this script, pre-formatted with ==== between EACH prompt (not sections):\n{script}\n"
+        "Required for each section:\n"
+        "INTRO: 2 prompts\n"
+        "MAIN SECTIONS: 5 prompts each\n"
+        "OUTRO: 2 prompts\n"
+        "Include: camera specs, lighting, scene details, style\n"
+        "Format Example:\n"
+        "prompt1====\nprompt2====\nprompt3"
     )
     response = openai.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=1000
+        max_tokens=1500
     )
     return response.choices[0].message.content
 
