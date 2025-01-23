@@ -38,6 +38,15 @@ def generate_image_prompts(script):
     )
     return response.choices[0].message.content
 
+def format_image_prompts(script):
+    prompts = generate_image_prompts(script)
+    formatted_prompts = format_image_prompts(st.session_state.script)
+   # formatted_prompts = prompts.split('\n')
+    # Filter out empty lines and join with separator
+    clean_prompts = '\n====\n'.join([p.strip() for p in formatted_prompts if p.strip()])
+    st.text_area("Formatted Prompts for Image Generator", clean_prompts, height=300)
+    return clean_prompts
+
 def generate_thumbnail_ideas(topic, script):
     prompt = (
         "You are an expert in creating catchy YouTube thumbnails. Based on the provided topic and script, suggest 3-5 thumbnail ideas that are engaging, visually appealing, and optimized for clicks.\n"
