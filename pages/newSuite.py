@@ -20,24 +20,6 @@ def generate_script(topic, duration, style):
 
 def generate_image_prompts(script):
     prompt = (
-        "You are a prompt designer for Leonardo AI, specializing in generating detailed image prompts for thumbnails and visuals.\n"
-        "Based on the script below, create detailed prompts for each section.\n"
-        "- For the intro and outro, create 1 image prompt each.\n"
-        "- For the main sections, create 1 prompt per section (up to 5 sections).\n"
-        "Each image prompt must fit within 24 tokens and include the following details:\n"
-        "- Camera type, lens, and angle\n"
-        "- Colors, lighting, and objects in the scene\n"
-        "- Style (e.g., photorealistic, cinematic, minimalistic)\n"
-        f"Here is the script: {script}\n"
-        "Output the prompts in a numbered list, one for each section."
-    )
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=800
-    )
-    return response.choices[0].message.contentdef generate_image_prompts(script):
-    prompt = (
         "You are a prompt designer for Leonardo AI. Create detailed image prompts for each section.\n"
         "- 1 prompt each for intro/outro\n"
         "- 1 prompt per main section (up to 5)\n"
