@@ -7,3 +7,4 @@ numpy
 langchain-community~=0.3.2
 plotly~=5.24.1
 Pygments~=2.18.0
+openai
