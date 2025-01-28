@@ -93,6 +93,7 @@ st.title("YouTube Content Creation Assistant")
 # Embed Elfsight widget
 st.markdown(
     """
+    <iframe>
     <script type="text/javascript">
       (function(d, t) {
         var v = d.createElement(t), s = d.getElementsByTagName(t)[0];
@@ -113,6 +114,7 @@ st.markdown(
         s.parentNode.insertBefore(v, s);
       })(document, 'script');
     </script>
+    </iframe>
     """,
     unsafe_allow_html=True
 )
