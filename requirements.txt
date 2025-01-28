@@ -1,19 +1,9 @@
 streamlit
 langchain
-langchain-community==0.0.9
+langchain_community
 pandas
-numpy==1.21.6  # Ensure compatibility with Python 3.9
+numpy
 plotly
 Pygments
 openai
-langchain.embeddings
-faiss-cpu==1.7.4
-PyMuPDF==1.21.0
-tiktoken
-matplotlib
-random
-json
-sentence-transformers==2.2.2
-
-
 
