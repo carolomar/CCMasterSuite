@@ -9,3 +9,6 @@ openai
 langchain.embeddings
 faiss-cpu
 tiktoken
+matplotlib
+random
+json
