@@ -6,4 +6,4 @@ numpy
 plotly
 Pygments
 openai
-
+langchain.embeddings
