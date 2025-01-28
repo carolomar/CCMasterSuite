@@ -93,8 +93,26 @@ st.title("YouTube Content Creation Assistant")
 # Embed Elfsight widget
 st.markdown(
     """
-    <script src="https://static.elfsight.com/platform/platform.js" async></script>
-    <div class="elfsight-app-094aef79-ae3d-4e33-bbac-e8950bde7316" data-elfsight-app-lazy></div>
+    <script type="text/javascript">
+      (function(d, t) {
+        var v = d.createElement(t), s = d.getElementsByTagName(t)[0];
+        v.onload = function() {
+          if (!document.getElementById('root')) {
+            var root = d.createElement('div');
+            root.id = 'root';
+            d.body.appendChild(root);
+          }
+          if (window.myChatWidget && typeof window.myChatWidget.load === 'function') {
+            window.myChatWidget.load({
+              id: 'ed9bb6de-7ddf-4888-8b7b-f2eee94944d3',
+            });
+          }
+        };
+        v.src = "https://agentivehub.com/production.bundle.min.js";
+        v.type = "text/javascript";
+        s.parentNode.insertBefore(v, s);
+      })(document, 'script');
+    </script>
     """,
     unsafe_allow_html=True
 )
