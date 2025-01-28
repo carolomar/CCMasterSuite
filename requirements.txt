@@ -7,3 +7,5 @@ plotly
 Pygments
 openai
 langchain.embeddings
+faiss-cpu
+tiktoken
