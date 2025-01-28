@@ -100,14 +100,14 @@ topic = st.text_input("Enter your video topic:")
 duration = st.slider("Select video duration (minutes):", min_value=1, max_value=10, value=5)
 style = st.text_area("Describe your style (e.g., Casual, Educational, Humorous):")
 
-st.markdown("""
-    <script src="https://static.elfsight.com/platform/platform.js" async></script>
-    <div class="elfsight-app-094aef79-ae3d-4e33-bbac-e8950bde7316" data-elfsight-app-lazy></div>
-""", unsafe_allow_html=True)
-
 
 
 if st.button("Generate Content"):
+    st.markdown("""
+        <script src="https://static.elfsight.com/platform/platform.js" async></script>
+        <div class="elfsight-app-094aef79-ae3d-4e33-bbac-e8950bde7316" data-elfsight-app-lazy></div>
+    """, unsafe_allow_html=True)
+
     if not api_key:
         st.error("Please enter your OpenAI API key before proceeding.")
     else:
