@@ -18,7 +18,7 @@ def init_embedding_model():
 @st.cache_resource
 def load_vectorstore():
     try:
-        with open("workshop_vectorstore.pkl", "rb") as f:
+        with open("../workshop_vectorstore.pkl", "rb") as f:
             return pickle.load(f)
     except FileNotFoundError:
         st.error("Knowledge base not found. Please process PDFs first.")
