@@ -1,13 +1,73 @@
-
 import openai
 import streamlit as st
+import requests
+from PIL import Image
+from io import BytesIO, StringIO
+import csv
+from zipfile import ZipFile
+import os, time
+from datetime import datetime
 
+st.title("....YouTube Content + Image Generator")
+
+# Sidebar instructions
+st.sidebar.title("Quick Start")
+st.sidebar.markdown("""
+- Enter both API keys
+- Input video topic, duration, style
+- Click 'Generate Content'
+- Images generate in batches of 10
+- Click 'Generate Next Batch'
+- Download images and CSV
+""")
+st.sidebar.info("💡 CSV works with Canva's bulk import")
+st.sidebar.warning("⏳ Full generation takes ~30-45 minutes")
+
+# Detailed instructions
+with st.expander("📚 How to Use This App", expanded=False):
+    st.markdown("""
+    **Step-by-Step Guide:**
+    1. **API Keys**
+        - OpenAI API key: Script generation
+        - Leonardo AI key: Image creation
+
+    2. **Input Details**
+        - Topic: Video's main subject
+        - Duration: Length in minutes
+        - Style: Content tone
+
+    3. **Generation Process**
+        - Script generates first
+        - Images create in batches
+        - Progress tracker included
+
+    4. **Downloads**
+        - CSV for Canva import
+        - ZIP of all images
+        - Image URLs list
+    """)
+
+# Initialize session state
+if 'current_batch' not in st.session_state:
+    st.session_state.current_batch = 0
+    st.session_state.all_batches = []
+    st.session_state.generated_images = []
+    st.session_state.generated_urls = []
+    st.session_state.script = None
+    st.session_state.image_data = []
+
+# API Keys
+openai_api_key = st.text_input("Enter OpenAI API Key:", type="password")
+leonardo_api_key = st.text_input("Enter Leonardo API Key:", type="password")
+
+
+@st.cache_data(ttl=3600)
 def generate_script(topic, duration, style):
     prompt = (
-        f"You are a professional scriptwriter for YouTube videos. Based on the following inputs, generate a {duration}-minute script at a normal speaking pace (~750 words).\n"
-        f"The tone and style must match the provided description. Break the script into sections with appropriate headings for clarity.\n"
-        f"- Topic: {topic}\n"
-        f"- Style: {style}\n"
+        f"You are a professional scriptwriter for YouTube videos. Create a {duration}-minute script using this exact topic title: '{topic}'\n"
+        f"Use a normal speaking pace (~750 words/minute). Break into sections with clear headings.\n"
+        f"Style: {style}\n"
+        f"The first line must be exactly: '{topic}'\n"
         f"Ensure the script flows smoothly, keeping viewers engaged from start to finish."
     )
     response = openai.chat.completions.create(
@@ -20,121 +80,239 @@ def generate_script(topic, duration, style):
 
 def generate_image_prompts(script):
     prompt = (
-        f"Generate image prompts for this script, pre-formatted with ==== between EACH prompt (not sections):\n{script}\n"
-        "Required for each section:\n"
-        "INTRO: 2 prompts\n"
-        "MAIN SECTIONS: 5 prompts each\n"
-        "OUTRO: 2 prompts\n"
-        "Include: camera specs, lighting, scene details, style\n"
-        "Format Example:\n"
-        "prompt1====\nprompt2====\nprompt3"
-    )
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1500
-    )
-    return response.choices[0].message.content
-
-
-def generate_thumbnail_ideas(topic, script):
-    prompt = (
-        "You are an expert in creating catchy YouTube thumbnails. Based on the provided topic and script, suggest 3-5 thumbnail ideas that are engaging, visually appealing, and optimized for clicks.\n"
-        "- Use a few bold words (e.g., 'MUST SEE,' 'SHOCKING FACTS').\n"
-        "- Include emojis if relevant.\n"
-        "- Suggest a brief visual description (e.g., 'A polar bear on thin ice with dramatic lighting').\n"
-        f"Topic: {topic}\n"
+        "You are a prompt designer for Leonardo AI. Create contextually relevant image prompts based on the script context.\n"
+        "Rules:\n"
+        "1. Stay strictly within the subject matter's historical/factual context\n"
+        "2. For any mention of 'legend' or similar terms, use actual historical references from the topic\n"
+        "3. Maintain cultural and historical accuracy\n"
+        "4. Repeat key identifying phrases in each prompt to maintain consistency\n"
         f"Script: {script}\n"
-        "Output each idea on a new line."
+        "Format each prompt to include: setting, lighting, camera angle, style"
     )
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=500
+        max_tokens=800
     )
     return response.choices[0].message.content
 
-def generate_video_metadata(topic, script):
-    title_prompt = (
-        "You are a YouTube video title expert. Based on the following topic and script, suggest 3 click-worthy titles that are concise, engaging, and optimized for SEO.\n"
-        f"- Topic: {topic}\n"
-        f"- Script: {script}\n"
-        "Output the titles in a numbered list."
-    )
-    description_prompt = (
-        "You are an expert at writing YouTube video descriptions. Based on the following topic and script, write a compelling description optimized for SEO.\n"
-        "Include:\n"
-        "- A summary of the video.\n"
-        "- Keywords related to the topic.\n"
-        "- A call to action (e.g., 'Subscribe for more!').\n"
-        f"Topic: {topic}\n"
-        f"Script: {script}\n"
-        "Output the description as a paragraph."
-    )
-    title_response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": title_prompt}],
-        max_tokens=200
-    )
-    description_response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": description_prompt}],
-        max_tokens=300
-    )
-    titles = title_response.choices[0].message.content
-    description = description_response.choices[0].message.content
-    return titles, description
 
-# Streamlit App
-st.title("YouTube Content Creation Assistant")
+@st.cache_data(ttl=3600)
+def create_image(prompt, api_key):
+    blocked_words = ['bondage', 'slave', 'slavery', 'enslaved']
+    for word in blocked_words:
+        prompt = prompt.lower().replace(word, 'person')
 
-# API Key Input
-api_key = st.text_input("Enter your OpenAI API Key:", type="password")
-if api_key:
-    openai.api_key = api_key
+    try:
+        url = "https://cloud.leonardo.ai/api/rest/v1/generations"
+        payload = {
+            "width": 1472,
+            "height": 832,
+            "modelId": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
+            "num_images": 2,
+            "prompt": prompt,
+            "ultra": False,
+            "styleUUID": "111dc692-d470-4eec-b791-3475abac4c46",
+            "enhancePrompt": False
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "authorization": f"Bearer {api_key}"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        result = response.json()
+
+        if 'sdGenerationJob' not in result:
+            st.error(f"Error: {result.get('error', 'Unknown error')}")
+            return None
+
+        return result
+
+    except Exception as e:
+        st.error(f"Error generating image: {str(e)}")
+        return None
+
+
+@st.cache_data(ttl=3600)
+def get_images(generation_id, api_key):
+    url = f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}"
+    headers = {
+        "accept": "application/json",
+        "authorization": f"Bearer {api_key}"
+    }
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+
+def save_image_to_memory(url):
+    response = requests.get(url)
+    return BytesIO(response.content)
+
+
+def prepare_prompts(script, batch_size=10):
+    sections = script.split('\n\n')
+    all_prompts = []
+    all_prompts.extend([sections[0]] * 2)  # Intro
+    for section in sections[1:-1]:
+        all_prompts.extend([section] * 5)  # Sections
+    all_prompts.extend([sections[-1]] * 2)  # Outro
+    return [all_prompts[i:i + batch_size] for i in range(0, len(all_prompts), batch_size)]
+
+
+def process_generated_images(generated_images, script, start_index=0):
+    sections = script.split('\n\n')
+    image_data = []
+    img_counter = start_index
+
+    total_intro = 2
+    total_per_section = 5
+    total_outro = 2
+
+    while img_counter < len(generated_images):
+        if img_counter < total_intro:
+            filename = f"intro_{img_counter + 1}.png"
+            section_title = "Intro Section"
+        elif img_counter < total_intro + (len(sections) - 2) * total_per_section:
+            section_num = (img_counter - total_intro) // total_per_section + 1
+            image_num = (img_counter - total_intro) % total_per_section + 1
+            filename = f"section_{section_num}_image_{image_num}.png"
+            section_title = sections[section_num].split('\n')[0]
+        else:
+            outro_num = img_counter - (total_intro + (len(sections) - 2) * total_per_section) + 1
+            filename = f"outro_{outro_num}.png"
+            section_title = "Outro Section"
+
+        img_data = generated_images[img_counter]
+        with open(filename, 'wb') as f:
+            f.write(img_data.getvalue())
+        image_data.append([filename, section_title])
+        img_counter += 1
+
+    return image_data
+
 
 # User Inputs
 topic = st.text_input("Enter your video topic:")
 duration = st.slider("Select video duration (minutes):", min_value=1, max_value=10, value=5)
-style = st.text_area("Describe your style (e.g., Casual, Educational, Humorous):")
+style = st.text_area("Describe your style (e.g., Casual, Educational, Humorous) OR add short sample of your writing")
 
-
-if st.button("Generate Content"):
-    if not api_key:
-        st.error("Please enter your OpenAI API key before proceeding.")
+if st.button("Generate Content") or ('script_generated' in st.session_state and st.session_state.script_generated):
+    if not openai_api_key or not leonardo_api_key:
+        st.error("Please enter both API keys before proceeding.")
     else:
-        with st.spinner("Generating script..."):
-            script = generate_script(topic, duration, style)
+        openai.api_key = openai_api_key
+
+        if st.session_state.script is None:
+            with st.spinner("Generating script..."):
+                st.session_state.script = generate_script(topic, duration, style)
+                st.session_state.all_batches = prepare_prompts(st.session_state.script)
+                st.session_state.script_generated = True
             st.subheader("Generated Script")
-            st.write(script)
+            st.write(st.session_state.script)
 
-        with st.spinner("Generating image prompts..."):
-            image_prompts = generate_image_prompts(script)
-            st.subheader("Image Prompts")
-            st.write(image_prompts)
+        if st.session_state.current_batch < len(st.session_state.all_batches):
+            with st.spinner(
+                    f"Generating images (Batch {st.session_state.current_batch + 1}/{len(st.session_state.all_batches)})..."):
+                current_prompts = st.session_state.all_batches[st.session_state.current_batch]
 
-        with st.spinner("Generating thumbnail ideas..."):
-            thumbnails = generate_thumbnail_ideas(topic, script)
-            st.subheader("Thumbnail Ideas")
-            st.write(thumbnails)
+                for i, prompt in enumerate(current_prompts):
+                    progress_text = st.empty()
+                    progress_text.write(f"Processing image {i + 1} of {len(current_prompts)} in current batch...")
 
-        with st.spinner("Generating video metadata..."):
-            titles, description = generate_video_metadata(topic, script)
-            st.subheader("Video Titles")
-            st.write(titles)
+                    result = create_image(prompt, leonardo_api_key)
+                    if result:
+                        generation_id = result['sdGenerationJob']['generationId']
 
-            st.subheader("Video Description")
-            st.write(description)
+                        for _ in range(30):
+                            status = get_images(generation_id, leonardo_api_key)
+                            if status['generations_by_pk']['status'] == 'COMPLETE':
+                                for img in status['generations_by_pk']['generated_images']:
+                                    img_data = save_image_to_memory(img['url'])
+                                    st.session_state.generated_images.append(img_data)
+                                    st.session_state.generated_urls.append(img['url'])
+                                break
+                            time.sleep(1)
 
-        # Save all results to a text file
-        results = f"Generated Script:\n{script}\n\nImage Prompts:\n{image_prompts}\n\nThumbnail Ideas:\n{thumbnails}\n\nVideo Titles:\n{titles}\n\nVideo Description:\n{description}"
+                new_image_data = process_generated_images(
+                    st.session_state.generated_images,
+                    st.session_state.script,
+                    len(st.session_state.image_data)
+                )
+                st.session_state.image_data.extend(new_image_data)
 
-        # Display the download button for the results
-        st.download_button(
-            label="Download Results as Text File",
-            data=results,
-            file_name="results.txt",
-            mime="text/plain"
-        )
+                st.session_state.current_batch += 1
 
-st.caption("Powered by OpenAI GPT-4 and Streamlit")
+                st.write(f"Completed {st.session_state.current_batch} of {len(st.session_state.all_batches)} batches")
+
+                if st.session_state.current_batch < len(st.session_state.all_batches):
+                    st.button("Generate Next Batch", key="next_batch")
+                else:
+                    st.success("All images generated!")
+
+        if st.session_state.generated_images:
+            csv_string = StringIO()
+            csv.writer(csv_string).writerows([['Image', 'Caption']] + st.session_state.image_data)
+
+            st.download_button(
+                label="Download Canva CSV Template",
+                data=csv_string.getvalue(),
+                file_name="canva_bulk_import.csv",
+                mime="text/csv"
+            )
+
+            zip_buffer = BytesIO()
+            with ZipFile(zip_buffer, "w") as zip_file:
+                for filename, _ in st.session_state.image_data:
+                    zip_file.write(filename)
+
+            zip_buffer.seek(0)
+            st.download_button(
+                label="Download All Images",
+                data=zip_buffer,
+                file_name="images.zip",
+                mime="application/zip"
+            )
+
+            if st.session_state.generated_urls:
+                urls_text = '\n'.join(st.session_state.generated_urls)
+                st.download_button(
+                    "Download Image URLs",
+                    urls_text,
+                    file_name="image_urls.txt",
+                    mime="text/plain"
+                )
+
+            st.subheader("Generated Images")
+            cols = st.columns(3)
+            for idx, img_data in enumerate(st.session_state.generated_images):
+                col = cols[idx % 3]
+                with col:
+                    st.image(img_data, width=200)
+
+            # Local save option
+            save_path = st.text_input("Save directory path (optional):", "")
+            if save_path and st.button("Save Files Locally"):
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                save_dir = os.path.join(save_path, f"generation_{timestamp}")
+                os.makedirs(save_dir, exist_ok=True)
+
+                for idx, img_data in enumerate(st.session_state.generated_images):
+                    with open(os.path.join(save_dir, f"image_{idx + 1}.png"), 'wb') as f:
+                        f.write(img_data.getvalue())
+
+                with open(os.path.join(save_dir, 'canva_bulk_import.csv'), 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerows([['Image', 'Caption']] + st.session_state.image_data)
+
+                st.success(f"Files saved to {save_dir}")
+
+if st.button("Start Over"):
+    st.session_state.current_batch = 0
+    st.session_state.all_batches = []
+    st.session_state.generated_images = []
+    st.session_state.generated_urls = []
+    st.session_state.script = None
+    st.session_state.image_data = []
+    st.session_state.script_generated = False
+    st.rerun()
