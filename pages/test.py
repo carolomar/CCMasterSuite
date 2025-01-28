@@ -90,6 +90,15 @@ def generate_video_metadata(topic, script):
 # Streamlit App
 st.title("YouTube Content Creation Assistant")
 
+# Embed Elfsight widget
+st.markdown(
+    """
+    <script src="https://static.elfsight.com/platform/platform.js" async></script>
+    <div class="elfsight-app-094aef79-ae3d-4e33-bbac-e8950bde7316" data-elfsight-app-lazy></div>
+    """,
+    unsafe_allow_html=True
+)
+
 # API Key Input
 api_key = st.text_input("Enter your OpenAI API Key:", type="password")
 if api_key:
