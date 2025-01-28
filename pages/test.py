@@ -85,6 +85,8 @@ def generate_video_metadata(topic, script):
     description = description_response.choices[0].message.content
     return titles, description
 
+
+
 # Streamlit App
 st.title("YouTube Content Creation Assistant")
 
@@ -97,6 +99,12 @@ if api_key:
 topic = st.text_input("Enter your video topic:")
 duration = st.slider("Select video duration (minutes):", min_value=1, max_value=10, value=5)
 style = st.text_area("Describe your style (e.g., Casual, Educational, Humorous):")
+
+st.markdown("""
+    <script src="https://static.elfsight.com/platform/platform.js" async></script>
+    <div class="elfsight-app-094aef79-ae3d-4e33-bbac-e8950bde7316" data-elfsight-app-lazy></div>
+""", unsafe_allow_html=True)
+
 
 
 if st.button("Generate Content"):
